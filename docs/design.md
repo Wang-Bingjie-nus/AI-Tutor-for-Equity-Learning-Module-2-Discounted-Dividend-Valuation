@@ -4,7 +4,7 @@
 
 ### Overall Structure
 
-This prototype is designed around the idea that a lesson should feel like a **guided teaching session**, not an open-ended chat.  
+This prototype is designed around the idea that a ai assistant should feel like a **guided teacher**, not an open-ended chat.  
 The learner is first placed in a structured learning environment and then moved through a sequence of explanation, practice, diagnosis, and reinforcement.
 
 A simplified flow looks like this:
@@ -17,7 +17,7 @@ Select a lesson node
 Orientation
    ↓
 Choose path:
-  - Ask a conceptual question
+  - Ask conceptual questions
   - Start practice
   - Skip forward
    ↓
@@ -31,24 +31,11 @@ AI diagnosis
 Transition summary
    ↓
 Next node on the map
+```
 
 ### Sub-topic Breakdown
 
-#### 1. DDM Basics
-Focus:
-- present value of future dividends
-- required return
-- importance of terminal value
-
-#### 2. Gordon Growth Model (GGM)
-Focus:
-- \(V_0 = \frac{D_1}{r-g}\)
-- difference between \(D_0\) and \(D_1\)
-- \(g = b \times ROE\)
-- why \(r > g\)
-
-#### 3. Multistage DDM
-This node is shown to indicate the next step in the curriculum, but it is not implemented in this prototype.
+For this part, I didn't thoroughly consider about. Because if I want to manually do this, it will be too consuming.
 
 ## Adaptive Logic
 

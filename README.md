@@ -1,5 +1,6 @@
 # Project Structure
-`
+```text
+.
 ├── docs/
 │   └── design.md                  # Pedagogical design document
 ├── src/
@@ -18,7 +19,7 @@
 ├── .gitignore
 ├── package.json
 └── README.md
-`
+
 
 # AI Tutor for Equity Learning Module 2: Discounted Dividend Valuation
 

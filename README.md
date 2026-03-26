@@ -2,6 +2,48 @@
 
 ## Quick Start
 
+### Local Development (Docker)
+
+#### Prerequisites
+
+- Docker
+- Docker Compose
+- A valid DeepSeek API key
+
+#### 1. Clone the repository
+
+```bash
+git clone <https://github.com/Wang-Bingjie-nus/AI-Tutor-for-Equity-Learning-Module-2-Discounted-Dividend-Valuation>
+cd ai-equity-tutor
+```
+#### 2. Create a local environment file
+
+Create a .env.local file in the project root:
+
+```bash
+DEEPSEEK_API_KEY=your_api_key_here
+```
+
+#### 3. Start the application
+
+```bash
+docker compose up --build
+```
+
+#### 4. Open the application
+
+Visit:
+
+```bash
+http://localhost:3000
+```
+
+#### 5. Close the application
+
+```bash
+docker compose down
+```
+
 ### Local Development
 
 #### Prerequisites

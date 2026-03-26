@@ -1,47 +1,164 @@
-# Pedagogical Design: AI Tutor for Discounted Dividend Valuation
+# Pedagogical Design
 
-## 1. Lesson Flow (Graph-Based Knowledge Map)
-Traditional linear learning limits user autonomy. This AI Tutor employs a **Graph-based Knowledge Map** to visualize the relationships between concepts in Equity Learning Module 2. 
+## Lesson Flow
 
-* **Nodes:** The map consists of three primary nodes:
-  1. DDM Basics (Discounted Dividend Model)
-  2. GGM Formula (Gordon Growth Model)
-  3. Multistage DDM
-* **Edges (Relationships):** - *Solid arrows* indicate prerequisites (e.g., DDM Basics must be completed before Multistage DDM).
-  - *Dotted lines* indicate conceptual associations without strict sequential requirements.
-  - *Parallel nodes* allow learners to choose their own starting point.
+### Overall Structure
 
-**PoC Scope Constraint:** For this prototype, the graph is rendered visually to demonstrate the pedagogical vision, but only the **GGM Formula** node is fully interactive. Full graph state management is deferred to future iterations.
+This prototype is designed around the idea that a lesson should feel like a **guided teaching session**, not an open-ended chat.  
+The learner is first placed in a structured learning environment and then moved through a sequence of explanation, practice, diagnosis, and reinforcement.
 
-## 2. Adaptive Logic (Autonomy & Remediation)
-The system respects the learner's autonomy. In the modern era of ubiquitous information, rote memorization of formulas is less critical than deep conceptual understanding. 
+A simplified flow looks like this:
 
-* **Error Classification:** The LLM diagnoses errors by classifying them (e.g., confusing $D_0$ with $D_1$, or miscalculating the denominator $r - g$).
-* **Infinite Retries & Learner Agency:** There is no hard cap on retries. Instead, the UI provides explicit **"Hint"** and **"Show Answer"** buttons. 
-* **Remediation Flagging:** If a user struggles (multiple incorrect attempts) or relies heavily on the "Hint" / "Show Answer" buttons, the AI flags this specific knowledge node for *remediation*. The tutor will dynamically inject a follow-up conceptual question or a parallel calculation task to ensure actual comprehension rather than just rewarding a brute-force correct answer.
+```text
+Learning Map
+   ↓
+Select a lesson node
+   ↓
+Orientation
+   ↓
+Choose path:
+  - Ask a conceptual question
+  - Start practice
+  - Skip forward
+   ↓
+Practice attempt
+   ↓
+AI diagnosis
+   ├── Incorrect → remediate → retry
+   ├── Correct but shallow → micro-quiz
+   └── Correct and sufficient → advance
+   ↓
+Transition summary
+   ↓
+Next node on the map
 
-## 3. Content Integration
-The learning interface uses a split-screen Dashboard design to seamlessly blend modalities:
-* **Visual Map:** A top or side navigation area displaying the Knowledge Graph.
-* **Core Material:** The main viewing area embeds relevant textbook passages (extracted from the CFA PDF) and a relevant YouTube video for auditory/visual learners.
-* **Interactive Tutor:** A side panel dedicated to the AI chat and quiz interface, which updates dynamically based on the learner's progress through the GGM node.
+### Sub-topic Breakdown
 
-## 4. AI Prompt Design
-The backend utilizes OpenAI's API, forcing the LLM to output structured JSON to act as a definitive decision engine for the frontend UI.
+#### 1. DDM Basics
+Focus:
+- present value of future dividends
+- required return
+- importance of terminal value
 
-**System Prompt Strategy:**
-> "You are an expert finance tutor evaluating a student's answer for the Gordon Growth Model. 
-> You MUST respond in the following strict JSON format:
-> {
->   "is_correct": boolean,
->   "error_type": "string (e.g., 'Confused D0 and D1', 'Calculation Error', 'None')",
->   "tutor_response": "string (Explain the concept or provide the hint requested)",
->   "action": "string ('advance', 'remediate', 'provide_hint', or 'show_answer')",
->   "needs_future_review": boolean (Set to true if they relied on hints or failed multiple times)
-> }"
+#### 2. Gordon Growth Model (GGM)
+Focus:
+- \(V_0 = \frac{D_1}{r-g}\)
+- difference between \(D_0\) and \(D_1\)
+- \(g = b \times ROE\)
+- why \(r > g\)
 
-## 5. What I'd Do Next
-Given more time, I would expand this prototype into a production-ready application by implementing:
-1. **Full Graph State Management:** Implement a global state provider (e.g., Redux or React Context) to track completion status across all nodes in the Knowledge Map, unlocking solid-arrow nodes only when prerequisites are met.
-2. **Retrieval-Augmented Generation (RAG):** Instead of hardcoding textbook snippets, chunk the entire 50-page PDF into a vector database to allow the AI to dynamically pull relevant passages for any node on the graph.
-3. **Learning Analytics Dashboard:** Track `needs_future_review` flags and `error_type` frequencies over time to identify conceptual blind spots and automatically adjust the difficulty curve of future modules.
+#### 3. Multistage DDM
+This node is shown to indicate the next step in the curriculum, but it is not implemented in this prototype.
+
+## Adaptive Logic
+
+The adaptive layer uses structured LLM output instead of free-form feedback.  
+For each learner response, the model returns:
+
+- correctness
+- likely error type
+- pedagogical action
+- review flag
+- suggested UI action
+
+### Progression Logic
+
+- **Incorrect answer:** explain the mistake and keep the learner on the same question.
+- **Correct but shallow answer:** ask a short follow-up concept check.
+- **Correct and sufficient answer:** move to the next question or next lesson part.
+
+### Progress Tracking
+
+Each lesson stores:
+
+- `score`
+- `needsReview`
+- `lastDiagnosis`
+
+This state is saved in `localStorage`, so the knowledge map can reflect mastery and review needs.
+
+### Retry Policy
+
+The learner is not forced forward after a fixed number of attempts.  
+Instead, the system supports retries, hints, and worked answers, while marking weak areas for future review.
+
+## Content Integration
+
+Each lesson uses a **split-screen layout**.
+
+### Left Panel
+Contains learning materials:
+- embedded video
+- textbook excerpt
+- formulas and notation
+
+### Right Panel
+Contains the proactive AI tutor:
+- orientation
+- conceptual Q&A
+- practice evaluation
+- concept checks
+- transition summary
+
+### Why This Design
+
+The learner can read, watch, solve, and receive feedback in one place.  
+This reduces context switching and makes the tutoring flow feel structured.
+
+### Quiz Design
+
+Different stages use different question types:
+
+- **Early stage:** terminology and formula recognition
+- **Middle stage:** procedural calculations
+- **Later stage:** conceptual transfer and assumptions
+
+## AI Prompt Design
+
+The LLM is prompted as a **proactive finance tutor**, not as a generic assistant.  
+Its role is to explain, diagnose, and decide what the learner should do next.
+
+### Structured Output
+
+The model must return strict JSON with fields such as:
+
+- `is_correct`
+- `diagnosis`
+- `pedagogical_action`
+- `tutor_response`
+- `should_mark_review`
+- `suggested_ui_action`
+
+This makes the backend response usable both for feedback and UI control.
+
+### Prompt Types
+
+The backend handles several tutoring actions:
+
+- `ask_question`
+- `practice_answer`
+- `hint`
+- `show_answer`
+- `concept_check_answer`
+- `transition_summary`
+
+Each action type supports a different teaching goal, such as explanation, remediation, verification, or summary.
+
+## What I'd Do Next
+
+Given more time, I would improve the system in the following ways:
+
+1. **Implement Multistage DDM**  
+   Complete the curriculum path beyond DDM Basics and GGM.
+
+2. **Add Retrieval-Based Content**  
+   Replace hardcoded excerpts with relevant textbook retrieval.
+
+3. **Improve Mastery Tracking**  
+   Track attempts, hint usage, and recurring error types.
+
+4. **Persist User Progress**  
+   Store learning progress in a database instead of only `localStorage`.
+
+5. **Use Better Learning Assets**  
+   Replace placeholder videos with curated lesson material.

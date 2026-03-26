@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Project Structure
+.
+├── docs/
+│   └── design.md                  # Pedagogical design document
+├── src/
+│   └── app/
+│       ├── api/
+│       │   └── chat/
+│       │       └── route.ts       # LLM orchestration and structured pedagogical decisions
+│       ├── learn/
+│       │   ├── ddm/
+│       │   │   └── page.tsx       # DDM Basics lesson page
+│       │   └── ggm/
+│       │       └── page.tsx       # Gordon Growth Model lesson page
+│       ├── globals.css            # Global styling
+│       ├── layout.tsx             # Root app layout
+│       └── page.tsx               # Knowledge map / module entry page
+├── .gitignore
+├── package.json
+└── README.md
 
-## Getting Started
+# AI Tutor for Equity Learning Module 2: Discounted Dividend Valuation
 
-First, run the development server:
+This project is a proof-of-concept AI tutoring application for **Equity Learning Module 2 — Discounted Dividend Valuation**.  
+Instead of behaving like a passive chatbot, the system is designed to act as a **proactive tutor** that guides the learner through concepts, checks understanding, provides remediation, and decides when the learner is ready to move forward.
+
+The current prototype focuses on two interactive lesson nodes:
+
+- **DDM Basics**
+- **The Gordon Growth Model (GGM)**
+
+A third node, **Multistage DDM**, is shown on the learning map as the next conceptual step but is intentionally left locked in this prototype.
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js 20+**
+- **npm**
+- A valid **DeepSeek API key** (the current backend uses DeepSeek's chat completion endpoint)
+
+### Environment Setup
+
+Create a local environment file:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+cp .env.example .env.local

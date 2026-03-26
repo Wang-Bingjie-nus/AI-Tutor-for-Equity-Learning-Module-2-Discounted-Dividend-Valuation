@@ -19,13 +19,17 @@ cd ai-equity-tutor
 
 #### 2. Install dependencies
 
+```bash
 npm install
+```
 
 #### 3. Create a local environment file
 
 Create a .env.local file in the project root:
 
+```bash
 DEEPSEEK_API_KEY=your_api_key_here
+```
 
 # Project Structure
 ```text

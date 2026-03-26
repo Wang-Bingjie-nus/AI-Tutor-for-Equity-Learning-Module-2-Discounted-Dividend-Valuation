@@ -16,12 +16,10 @@ type NodeState = {
   lastDiagnosis: string;
 };
 
-// 专属 DDM 的 Storage Key
 const STORAGE_KEY = "ddm-proactive-state-v1";
 
 const DEFAULT_STATE: NodeState = { score: 0, needsReview: false, lastDiagnosis: "none" };
 
-// 替换为 DDM 基础知识相关的练习题
 const PRACTICE_QUESTIONS = [
   { id: "ddm-q1", prompt: "Practice Question 1: An investor expects a company to pay a dividend ($D_1$) of $2.50$ in exactly one year. At that same time, the investor expects to sell the stock for $50.00$. If the investor's required rate of return ($r$) is $10\\%$, what is the intrinsic value ($V_0$) of the stock today?" },
   { id: "ddm-q2", prompt: "Practice Question 2: Why is the assumption of the terminal value (the expected selling price in the future) so critical when using a finite-period Discounted Dividend Model?" },

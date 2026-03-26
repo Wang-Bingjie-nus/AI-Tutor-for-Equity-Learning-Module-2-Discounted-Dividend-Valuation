@@ -7,38 +7,38 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
-type Message = { role: "assistant" | "user"; content: string };
-type LearningMode = "orientation" | "ask" | "practice" | "micro_quiz" | "transition" | "completed";
+type Message = { role: "assistant" | "user"; content: string };         // 控制右侧UI显示对话
+type LearningMode = "orientation" | "ask" | "practice" | "micro_quiz" | "transition" | "completed";     // 学习的不同环节
 
 type NodeState = {
-  score: number;
-  needsReview: boolean;
-  lastDiagnosis: string;
+  score: number;      // 掌握程度
+  needsReview: boolean;     // 是否需要复习，空值主页面可视化与LLM输出
+  lastDiagnosis: string;    // 错误类型，控制LLM后续输出
 };
 
 const STORAGE_KEY = "ggm-proactive-state-v1";
 
 const DEFAULT_STATE: NodeState = { score: 0, needsReview: false, lastDiagnosis: "none" };
 
-const PRACTICE_QUESTIONS = [
+const PRACTICE_QUESTIONS = [    // 题目
   { id: "ggm-q1", prompt: "Practice Question 1: A company just paid a dividend ($D_0$) of $1.35$. Shareholders expect a $9.8\\%$ return ($r$). The company has a retention rate ($b$) of $55\\%$ and an $ROE$ of $12\\%$. What is the intrinsic value ($V_0$)?" },
   { id: "ggm-q2", prompt: "Practice Question 2: A company has just paid a dividend ($D_0$) of $2.00$. The required return is $11\\%$, and dividends are expected to grow forever at $4\\%$. Using the Gordon Growth Model, what is the intrinsic value ($V_0$)?" },
 ];
 
 export default function GGMPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);      // 保存上下文
+  const [inputValue, setInputValue] = useState("");         
+  const [isLoading, setIsLoading] = useState(false);            // 避免重复点击
   const [isReady, setIsReady] = useState(false);
-  const [mode, setMode] = useState<LearningMode>("orientation");
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [mode, setMode] = useState<LearningMode>("orientation");    // 教学阶段，决定按钮展示
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);    // 当前题目
   const [nodeState, setNodeState] = useState<NodeState>(DEFAULT_STATE);
 
   const currentQuestion = useMemo(() => PRACTICE_QUESTIONS[currentQuestionIndex], [currentQuestionIndex]);
 
   useEffect(() => {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const loadedState = raw ? JSON.parse(raw) : DEFAULT_STATE;
+    const raw = window.localStorage.getItem(STORAGE_KEY);         // 分数与复习标记
+    const loadedState = raw ? JSON.parse(raw) : DEFAULT_STATE;    // 区别复习与新学习
     setNodeState(loadedState);
     
     setMessages([{ 
@@ -48,7 +48,7 @@ export default function GGMPage() {
     setIsReady(true);
   }, []);
 
-  const updateNodeState = (updates: Partial<NodeState>) => {
+  const updateNodeState = (updates: Partial<NodeState>) => {      // 统一更新节点
     const newState = { ...nodeState, ...updates };
     newState.score = Math.max(0, Math.min(10, newState.score));
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
@@ -59,7 +59,7 @@ export default function GGMPage() {
     setMessages((prev) => [...prev, { role: "assistant", content }]);
   };
 
-  const executeUIAction = (action: string, tutorResponse: string) => {
+  const executeUIAction = (action: string, tutorResponse: string) => {    // 对于不同教学模式，给出不同输出
     appendAssistantMessage(tutorResponse);
     
     switch (action) {
@@ -89,12 +89,14 @@ export default function GGMPage() {
   };
 
   const handleAction = async (actionType: "ask_question" | "practice_answer" | "hint" | "show_answer" | "concept_check_answer", forcedText?: string) => {
+    // 核心交互
     if (isLoading) return;
     const userText = forcedText || inputValue;
     if (!userText.trim() && actionType !== "hint" && actionType !== "show_answer") return;
 
     let newMessages = messages;
     if (actionType === "practice_answer" || actionType === "ask_question" || actionType === "concept_check_answer" || actionType === "show_answer") {
+      // 需要显示在聊天框，并作为LLM的输入的action类型
       newMessages = [...messages, { role: "user", content: userText }];
       setMessages(newMessages);
       setInputValue("");
@@ -102,7 +104,7 @@ export default function GGMPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/chat", {
+      const response = await fetch("/api/chat", {     // 向后端发送请求
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: newMessages, action_type: actionType, current_question: currentQuestion.prompt }),
@@ -113,7 +115,8 @@ export default function GGMPage() {
       
       // Update State based on AI Diagnosis
       let newScore = nodeState.score;
-      if (actionType === "practice_answer" || actionType === "concept_check_answer") {
+      if (actionType === "practice_answer" || actionType === "concept_check_answer") {    
+        // 打分
         if (data.is_correct) newScore += (actionType === "concept_check_answer" ? 2 : 3);
         else newScore -= 1;
       }
@@ -124,7 +127,7 @@ export default function GGMPage() {
         lastDiagnosis: data.diagnosis?.error_type || "none"
       });
 
-      executeUIAction(data.suggested_ui_action, data.tutor_response);
+      executeUIAction(data.suggested_ui_action, data.tutor_response);     // ai决定下一步
     } catch (error) {
       appendAssistantMessage("I encountered a network error. Let's try that again.");
     } finally {
@@ -133,6 +136,7 @@ export default function GGMPage() {
   };
 
   const handleTransitionSummary = async () => {
+    // 知识点结束
     setIsLoading(true);
     try {
       const response = await fetch("/api/chat", {
@@ -151,7 +155,7 @@ export default function GGMPage() {
     }
   };
 
-  const enterPractice = () => {
+  const enterPractice = () => {       // 练习模式
     setMode("practice");
     appendAssistantMessage("Let's test your understanding. " + PRACTICE_QUESTIONS[currentQuestionIndex].prompt);
   };

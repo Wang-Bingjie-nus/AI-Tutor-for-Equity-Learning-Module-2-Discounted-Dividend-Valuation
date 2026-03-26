@@ -3,27 +3,24 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-// 定义统一的数据结构
-type NodeState = { score: number; needsReview: boolean };
-const DEFAULT_STATE: NodeState = { score: 0, needsReview: false };
+type NodeState = { score: number; needsReview: boolean };              // 节点状态
+const DEFAULT_STATE: NodeState = { score: 0, needsReview: false };     // 初始化
 
 export default function KnowledgeMap() {
-  // 分别管理两个知识点的状态
+  // 记录节点状态，控制主界面可视化
   const [ddmState, setDdmState] = useState<NodeState>(DEFAULT_STATE);
   const [ggmState, setGgmState] = useState<NodeState>(DEFAULT_STATE);
 
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    setHasMounted(true);
+    setHasMounted(true);        // 好像是加载的bug，但没造成实际影响
     
-    // 读取 DDM 状态
     const rawDdm = window.localStorage.getItem("ddm-proactive-state-v1");
     if (rawDdm) {
       try { setDdmState(JSON.parse(rawDdm)); } catch (e) { console.error(e); }
     }
 
-    // 读取 GGM 状态
     const rawGgm = window.localStorage.getItem("ggm-proactive-state-v1");
     if (rawGgm) {
       try { setGgmState(JSON.parse(rawGgm)); } catch (e) { console.error(e); }
@@ -31,7 +28,7 @@ export default function KnowledgeMap() {
   }, []);
 
   if (!hasMounted) {
-    return <div className="min-h-screen bg-slate-50" />; 
+    return <div className="min-h-screen bg-slate-50" />;      // 过渡
   }
 
   return (

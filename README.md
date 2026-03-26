@@ -1,5 +1,5 @@
 # Project Structure
-.
+·
 ├── docs/
 │   └── design.md                  # Pedagogical design document
 ├── src/

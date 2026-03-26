@@ -1,77 +1,91 @@
 export const maxDuration = 30;
 
-type ActionType = "ask_question" | "practice_answer" | "hint" | "show_answer";
+const MATH_FORMAT_RULES = `
+Formatting rules for tutor_response:
+- Use LaTeX only for actual mathematical expressions.
+- Always wrap math with $...$.
+`;
+
+type ActionType = "ask_question" | "practice_answer" | "hint" | "show_answer" | "concept_check_answer" | "transition_summary";
 
 function buildSystemPrompt(actionType: ActionType, currentQuestion?: string) {
-  if (actionType === "ask_question") {
-    return `You are an expert CFA finance tutor.
-Respond to the user's conceptual question about the Gordon Growth Model.
-Return a raw JSON object with exactly these keys:
+  const baseInstructions = `You are a proactive, expert CFA finance tutor orchestrating a learning session about equity.
+You diagnose understanding, guide the learner, insert micro-quizzes to verify knowledge, and manage the flow.
+Always use clear teaching language. ${MATH_FORMAT_RULES}`;
+
+  const jsonSchemaInstruction = `
+You MUST return a raw JSON object with EXACTLY this structure:
 {
-  "is_correct": false,
-  "tutor_response": "string",
-  "action": "advance"
-}
-Use clear teaching language and LaTeX when useful.`;
+  "is_correct": boolean,
+  "diagnosis": {
+    "error_type": "none | concept_error | formula_error | growth_error | d0_d1_confusion | calculation_error | interpretation_error | insufficient_reasoning",
+    "mastery_estimate": number, // 0 to 10
+  },
+  "pedagogical_action": "advance | remediate | ask_micro_quiz | explain_concept | reinforce | mark_for_review | bridge_forward",
+  "tutor_response": "string (Your actual response to the student)",
+  "should_mark_review": boolean,
+  "suggested_ui_action": "stay_on_current_question | show_followup_check | move_to_next_question | move_to_next_part | stay_in_ask_mode"
+}`;
+
+  if (actionType === "ask_question") {
+    return `${baseInstructions}
+The user is asking a conceptual question. Answer it clearly, but BE PROACTIVE. End your response by suggesting a next step (e.g., "Would you like to try a practice problem to test this out?").
+${jsonSchemaInstruction}`;
   }
 
   if (actionType === "hint") {
-    return `You are an expert CFA finance tutor.
-The student is working on this question:
-${currentQuestion}
-Give a conceptual hint without revealing the full final answer.
-Return a raw JSON object with exactly these keys:
-{
-  "is_correct": false,
-  "tutor_response": "string",
-  "action": "provide_hint"
-}
-Use clear teaching language and LaTeX when useful.`;
+    return `${baseInstructions}
+The student requested a hint for: ${currentQuestion}.
+Provide a conceptual hint. DO NOT reveal the final answer. Guide them to the next logical step.
+Set "suggested_ui_action" to "stay_on_current_question".
+${jsonSchemaInstruction}`;
   }
 
   if (actionType === "show_answer") {
-    return `You are an expert CFA finance tutor.
-The student is working on this question:
-${currentQuestion}
-Show the full step-by-step solution.
-Return a raw JSON object with exactly these keys:
-{
-  "is_correct": false,
-  "tutor_response": "string",
-  "action": "show_answer"
-}
-Use clear teaching language and LaTeX when useful.`;
+    return `You are a proactive, expert CFA finance tutor orchestrating a learning session about equity. The student is working on this question: ${currentQuestion}.
+Show the full step-by-step solution. Return a raw JSON object with exactly these keys:
+  {
+    "is_correct": false,
+    "tutor_response": "string",
+    "action": "show_answer",
+    "suggested_ui_action": "move_to_next_part"
+  }
+${jsonSchemaInstruction}`;
   }
 
-  return `You are an expert CFA finance tutor evaluating a student's answer for the Gordon Growth Model.
-The current practice question is:
+  if (actionType === "concept_check_answer") {
+    return `${baseInstructions}
+The student is answering a proactive micro-quiz you previously asked to check their conceptual understanding.
+Evaluate their reasoning. If incorrect, remediate. If correct, praise them and set "suggested_ui_action" to "move_to_next_question" or "move_to_next_part".
+${jsonSchemaInstruction}`;
+  }
+
+  if (actionType === "transition_summary") {
+    return `${baseInstructions}
+The student is moving to the next module. Summarize what they just learned.
+Set "suggested_ui_action" to "move_to_next_part".
+${jsonSchemaInstruction}`;
+  }
+
+  // Default: practice_answer
+  return `${baseInstructions}
+The student is answering this practice question:
 ${currentQuestion}
-Evaluate whether the student's answer is correct.
-Mark is_correct as true if the student's final value is correct or very close numerically, even if the formatting differs.
-If the answer is incorrect, explain the likely mistake and guide the student without revealing unnecessary extra content.
-Return a raw JSON object with exactly these keys:
-{
-  "is_correct": boolean,
-  "tutor_response": "string",
-  "action": "advance" | "remediate"
-}
-Use clear teaching language and LaTeX when useful.`;
+
+Evaluate their answer carefully.
+PROACTIVE BEHAVIORS TO ENFORCE:
+1. If they are INCORRECT: Diagnose the exact error (e.g., "d0_d1_confusion" if they forgot to multiply D0 by 1+g). Provide targeted remediation. Do not just say "wrong". Set "suggested_ui_action" to "stay_on_current_question".
+2. If they are CORRECT: Do NOT just say "Good job" and advance every time. Proactively verify understanding! Randomly (or if their reasoning is brief), set "pedagogical_action" to "ask_micro_quiz", set "suggested_ui_action" to "show_followup_check", and in "tutor_response" ask a short follow-up like "Great! But why must r be strictly greater than g in this formula?"
+3. If they are CORRECT and you don't ask a micro-quiz, set "suggested_ui_action" to "move_to_next_question".
+${jsonSchemaInstruction}`;
 }
 
 export async function POST(req: Request) {
   try {
-    const {
-      messages = [],
-      action_type,
-      current_question,
-    }: {
-      messages?: Array<{ role: "assistant" | "user"; content: string }>;
-      action_type?: ActionType;
-      current_question?: string;
-    } = await req.json();
-
+    const { messages = [], action_type, current_question } = await req.json();
     const actionType: ActionType = action_type ?? "practice_answer";
 
+    // Use standard fetch to OpenAI/DeepSeek compatible endpoint
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
@@ -79,7 +93,7 @@ export async function POST(req: Request) {
         Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "deepseek-chat",
+        model: "deepseek-chat", // or gpt-4o-mini if using OpenAI
         response_format: { type: "json_object" },
         messages: [
           {
@@ -92,25 +106,33 @@ export async function POST(req: Request) {
     });
 
     if (!response.ok) {
-      throw new Error(`DeepSeek API responded with status: ${response.status}`);
+      throw new Error(`API responded with status: ${response.status}`);
     }
 
     const data = await response.json();
     const contentString = data?.choices?.[0]?.message?.content;
 
     if (!contentString) {
-      throw new Error("DeepSeek API returned an empty response.");
+      throw new Error("API returned an empty response.");
     }
 
+    // Parse the structured AI pedagogical decision
     const parsed = JSON.parse(contentString);
 
     return Response.json({
       is_correct: Boolean(parsed.is_correct),
-      tutor_response: parsed.tutor_response ?? "Sorry, I could not generate a response.",
-      action: parsed.action ?? "remediate",
+      diagnosis: parsed.diagnosis || { error_type: "none", mastery_estimate: 5},
+      pedagogical_action: parsed.pedagogical_action || "advance",
+      tutor_response: parsed.tutor_response || "Sorry, I could not generate a response.",
+      should_mark_review: Boolean(parsed.should_mark_review),
+      suggested_ui_action: parsed.suggested_ui_action || "stay_on_current_question"
     });
   } catch (error) {
-    console.error("Native Fetch API Error:", error);
-    return Response.json({ error: "Failed to fetch from native API" }, { status: 500 });
+    console.error("Proactive API Error:", error);
+    return Response.json({ 
+      error: "Failed to fetch from API",
+      tutor_response: "I encountered a cognitive glitch. Could you try that again?",
+      suggested_ui_action: "stay_on_current_question"
+    }, { status: 500 });
   }
 }

@@ -16,16 +16,18 @@ type NodeState = {
   lastDiagnosis: string;
 };
 
-const STORAGE_KEY = "ggm-proactive-state-v1";
+// 专属 DDM 的 Storage Key
+const STORAGE_KEY = "ddm-proactive-state-v1";
 
 const DEFAULT_STATE: NodeState = { score: 0, needsReview: false, lastDiagnosis: "none" };
 
+// 替换为 DDM 基础知识相关的练习题
 const PRACTICE_QUESTIONS = [
-  { id: "ggm-q1", prompt: "Practice Question 1: A company just paid a dividend ($D_0$) of $1.35$. Shareholders expect a $9.8\\%$ return ($r$). The company has a retention rate ($b$) of $55\\%$ and an $ROE$ of $12\\%$. What is the intrinsic value ($V_0$)?" },
-  { id: "ggm-q2", prompt: "Practice Question 2: A company has just paid a dividend ($D_0$) of $2.00$. The required return is $11\\%$, and dividends are expected to grow forever at $4\\%$. Using the Gordon Growth Model, what is the intrinsic value ($V_0$)?" },
+  { id: "ddm-q1", prompt: "Practice Question 1: An investor expects a company to pay a dividend ($D_1$) of $2.50$ in exactly one year. At that same time, the investor expects to sell the stock for $50.00$. If the investor's required rate of return ($r$) is $10\\%$, what is the intrinsic value ($V_0$) of the stock today?" },
+  { id: "ddm-q2", prompt: "Practice Question 2: Why is the assumption of the terminal value (the expected selling price in the future) so critical when using a finite-period Discounted Dividend Model?" },
 ];
 
-export default function GGMPage() {
+export default function DDMPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -41,9 +43,10 @@ export default function GGMPage() {
     const loadedState = raw ? JSON.parse(raw) : DEFAULT_STATE;
     setNodeState(loadedState);
     
+    // Proactive Orientation for DDM
     setMessages([{ 
       role: "assistant", 
-      content: "Welcome to the Gordon Growth Model module! In this session, we'll learn how to value mature companies with stable dividend growth.\n\nI am your AI tutor. I won't just test you—I'll guide your reasoning. Would you like to **Ask a conceptual question**, **Start practice**, or **Move to the next part**?" 
+      content: "Welcome to the DDM Basics module! In this session, we'll establish the fundamental principle of equity valuation: a stock's value is the present value of all its expected future dividends.\n\nI am your AI tutor. I won't just test you—I'll guide your reasoning. Would you like to **Ask a conceptual question**, **Start practice**, or **Move to the next part**?" 
     }]);
     setIsReady(true);
   }, []);
@@ -83,7 +86,6 @@ export default function GGMPage() {
       case "stay_on_current_question":
       case "stay_in_ask_mode":
       default:
-        // Mode remains the same, learner tries again or asks another question
         break;
     }
   };
@@ -144,7 +146,7 @@ export default function GGMPage() {
       appendAssistantMessage(data.tutor_response);
       setMode("completed");
     } catch {
-      appendAssistantMessage("You are ready to move on to the next module. (Placeholder)");
+      appendAssistantMessage("You are ready to move on to the next module. The Gordon Growth Model awaits!");
       setMode("completed");
     } finally {
       setIsLoading(false);
@@ -166,7 +168,7 @@ export default function GGMPage() {
       <div className="w-full md:w-1/2 h-full overflow-y-auto border-r border-slate-200 bg-white p-6 md:p-10">
         <div className="mb-8">
           <Link href="/" className="text-sm font-medium text-indigo-600 hover:text-indigo-800 flex items-center mb-4">← Back to Knowledge Map</Link>
-          <h1 className="text-3xl font-extrabold text-slate-900">The Gordon Growth Model</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900">DDM Basics</h1>
           <div className="flex items-center gap-4 mt-3">
             <p className="text-sm font-semibold text-indigo-600">Mastery: {nodeState.score}/10</p>
             {nodeState.needsReview && <span className="px-2 py-0.5 bg-rose-100 text-rose-700 text-xs font-bold rounded-full">Marked for Review</span>}
@@ -179,7 +181,7 @@ export default function GGMPage() {
             <iframe className="absolute top-0 left-0 w-full h-full" src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowFullScreen></iframe>
           </div>
           <div className="bg-slate-50 p-3 text-sm text-slate-500 border-t border-slate-100">
-            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{`🎥 **Video:** Solving for $g$ using Retention Rate ($b$) and $ROE$.`}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{`🎥 **Video:** Introduction to the General Discounted Dividend Model.`}</ReactMarkdown>
           </div>
         </div>
 
@@ -187,12 +189,12 @@ export default function GGMPage() {
         <div className="prose prose-slate max-w-none">
           <h3 className="text-xl font-bold text-slate-800 border-b pb-2 mb-4">Textbook Excerpt</h3>
           <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-r-lg">
-            <p className="text-sm text-amber-900 font-medium mb-2">Key Formula:</p>
+            <p className="text-sm text-amber-900 font-medium mb-2">The General Model Formula:</p>
             <div className="text-lg text-center mb-2 overflow-visible h-auto not-prose">
-              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{"$$V_0 = \\frac{D_1}{r - g}$$"}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{"$$V_0 = \\sum_{t=1}^{\\infty} \\frac{D_t}{(1+r)^t}$$"}</ReactMarkdown>
             </div>
             <div className="text-sm text-amber-800">
-              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{`- $V_0$ : Value today\n- $D_1$ : Expected dividend ($D_0 \\times (1+g)$)\n- $r$ : Required return\n- $g$ : Growth rate ($b \\times ROE$)`}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>{`- $V_0$ : Intrinsic value of the share today\n- $D_t$ : Expected dividend at time $t$\n- $r$ : Required rate of return on the stock\n\nFor a finite holding period of $n$ years, the value is the present value of dividends over $n$ years plus the present value of the terminal share price $P_n$.`}</ReactMarkdown>
             </div>
           </div>
         </div>
@@ -245,7 +247,9 @@ export default function GGMPage() {
               </>
             )}
             {mode === "completed" && (
-              <button disabled className="text-xs font-semibold px-3 py-1.5 bg-slate-100 text-slate-400 rounded-lg">Proceed to Next Module (Placeholder)</button>
+              <Link href="/learn/ggm">
+                <button className="text-xs font-semibold px-3 py-1.5 bg-green-800 text-green-100 rounded-lg hover:bg-green-700">Proceed to Next Module</button>
+              </Link>
             )}
           </div>
 
